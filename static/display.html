@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gram Riley Memorial - Live Mosaic</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            margin: 0;
+            /* 1. Make the body a flex container to center the mosaic perfectly */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden; /* Prevents scrollbars */
+        }
+
+        #mosaic-grid {
+            display: grid;
+            grid-template-columns: repeat(32, 1fr);
+            grid-template-rows: repeat(44, 1fr);
+            gap: 0px;
+
+            aspect-ratio: 1484 / 2045;
+            width: min(100vw, 100vh * (1484 / 2045));
+            max-height: 100vh;
+
+            background-image: linear-gradient(rgba(26, 26, 26, 0.8), rgba(26, 26, 26, 0.8)), url('/static/gram_portrait.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .tile {
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+
+            /* 1. Scale the image so it entirely fits inside the box without cropping */
+            background-size: contain;
+
+            /* 2. Prevent the image from repeating to fill the empty space */
+            background-repeat: no-repeat;
+
+            background-position: center;
+            transition: background-image 1.5s ease-in;
+        }
+    </style>
+</head>
+<body>
+    <div id="mosaic-grid"></div>
+
+    <script>
+        const GRID_WIDTH = 32;
+        const GRID_HEIGHT = 44;
+        const TOTAL_TILES = GRID_WIDTH * GRID_HEIGHT;
+        const grid = document.getElementById("mosaic-grid");
+
+        // 1. Pre-build the empty grid so we have slots to target
+        for (let i = 0; i < TOTAL_TILES; i++) {
+            const div = document.createElement("div");
+            div.className = "tile";
+            div.id = `tile-${i}`; // Assign a unique ID to every slot
+            grid.appendChild(div);
+        }
+
+        async function loadExistingMosaic() {
+            const response = await fetch('/api/state');
+            const state = await response.json();
+
+            for (const [index, url] of Object.entries(state)) {
+                const targetTile = document.getElementById(`tile-${index}`);
+                if (targetTile) {
+                    // Set the image without animation on initial load
+                    targetTile.style.transition = 'none';
+                    targetTile.style.backgroundImage = `url('${url}')`;
+
+                    // Restore the transition for future live updates
+                    setTimeout(() => {
+                        targetTile.style.transition = 'background-image 1.5s ease-in';
+                    }, 100);
+                }
+            }
+        }
+
+        // Call the function
+        loadExistingMosaic();
+
+        // 2. Connect to the WebSocket
+        const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws`);
+
+        // 3. Listen for new uploads and place them in the correct spot
+        ws.onmessage = function(event) {
+            // Parse the JSON payload from the backend
+            const data = JSON.parse(event.data);
+
+            // Find the specific tile ID
+            const targetTile = document.getElementById(`tile-${data.index}`);
+
+            if (targetTile) {
+                // Update the background image to trigger the CSS fade transition
+                targetTile.style.backgroundImage = `url('${data.url}')`;
+            }
+        };
+    </script>
+</body>
+</html>

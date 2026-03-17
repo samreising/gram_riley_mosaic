@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload a Memory</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 30px; max-width: 400px; margin: auto; text-align: center; color: #333;}
+        .upload-btn { background-color: #4A5568; color: white; padding: 15px; width: 100%; border: none; border-radius: 8px; font-size: 16px; margin-top: 20px; cursor: pointer;}
+        input[type="file"] { margin-top: 20px; }
+        #status { margin-top: 20px; font-weight: bold; color: #2F855A; }
+    </style>
+</head>
+<body>
+    <h2>Celebrate Gram Riley</h2>
+    <p>Upload a photo to add to the live mosaic.</p>
+
+    <form id="uploadForm">
+        <input type="file" id="fileInput" accept="image/*" required>
+        <button type="submit" class="upload-btn">Add to Mosaic</button>
+    </form>
+
+    <p id="status"></p>
+
+    <script>
+        document.getElementById('uploadForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('fileInput');
+            const statusText = document.getElementById('status');
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            statusText.innerText = "Uploading...";
+
+            const response = await fetch('/upload-image', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                statusText.innerText = "Beautiful. Thank you for sharing.";
+                fileInput.value = ""; // Reset the input for the next photo
+            } else {
+                statusText.innerText = "Something went wrong. Please try again.";
+                statusText.style.color = "#C53030";
+            }
+        };
+    </script>
+</body>
+</html>
